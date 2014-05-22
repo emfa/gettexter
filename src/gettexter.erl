@@ -25,14 +25,17 @@ dgettext(Domain, Msgid) -> dpgettext(Domain, undefined, Msgid).
 dngettext(Domain, Singular, Plural, N) -> dnpgettext(Domain, undefined, Singular, Plural, N).
 
 -spec dpgettext(atom(), string() | undefined, string()) -> string().
-dpgettext(Domain, Context, Msgid) ->
+dpgettext(Domain, Context, MsgID) ->
     Locale = getlocale(lc_messages),
     Domain1 = if Domain == undefined -> textdomain();
                  true -> Domain
               end,
-    case gettexter_server:dpgettext(Domain1, Context, Locale, Msgid) of
-        undefined -> Msgid;
-        Msgstr -> Msgstr
+    dpgettext(Domain1, Locale, Context, MsgID).
+
+dpgettext(Domain, Context, MsgID, Locale) ->
+    case gettexter_server:dpgettext(Domain, Locale, Context, MsgID) of
+        undefined -> MsgID;
+        MsgStr    -> MsgStr
     end.
 
 -spec dnpgettext(atom(), string() | undefined, string(), string(), integer()) -> string().
@@ -41,10 +44,13 @@ dnpgettext(Domain, Context, Singular, Plural, N) ->
     Domain1 = if Domain == undefined -> textdomain();
                   true -> Domain
               end,
-    case gettexter_server:dnpgettext(Domain1, Context, Locale, Singular, Plural, N) of
+    dnpgettext(Domain1, Context, Singular, Plural, N, Locale).
+    
+dnpgettext(Domain, Context, Singular, Plural, N, Locale) ->
+    case gettexter_server:dnpgettext(Domain, Context, Locale, Singular, Plural, N) of
         undefined when N == 1 -> Singular;
-        undefined -> Plural;
-        Msgstr -> Msgstr
+        undefined             -> Plural;
+        MsgStr                -> MsgStr
     end.
 
 %% TODO: add `*gettext(..., Locale)' functions here (locale from args, not PD).
