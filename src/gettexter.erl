@@ -24,7 +24,6 @@ npgettext(Context, Singular, Plural, N) -> dnpgettext(undefined, Context, Singul
 dgettext(Domain, Msgid) -> dpgettext(Domain, undefined, Msgid).
 dngettext(Domain, Singular, Plural, N) -> dnpgettext(Domain, undefined, Singular, Plural, N).
 
--spec dpgettext(atom(), string() | undefined, string()) -> string().
 dpgettext(Domain, Context, MsgID) ->
     Locale = getlocale(lc_messages),
     Domain1 = if Domain == undefined -> textdomain();
@@ -32,13 +31,16 @@ dpgettext(Domain, Context, MsgID) ->
               end,
     dpgettext(Domain1, Locale, Context, MsgID).
 
-dpgettext(Domain, Context, MsgID, Locale) ->
+dpgettext(Domain, Context, MsgID, Locale) when is_binary(Context),
+                                               is_binary(MsgID),
+                                               is_binary(Locale) ->
     case gettexter_server:dpgettext(Domain, Locale, Context, MsgID) of
         undefined -> MsgID;
         MsgStr    -> MsgStr
-    end.
+    end;
+dpgettext(Domain, Context, MsgID, Locale) ->
+    dpgettext(Domain, list_to_binary(Context), list_to_binary(MsgID), list_to_binary(Locale)).
 
--spec dnpgettext(atom(), string() | undefined, string(), string(), integer()) -> string().
 dnpgettext(Domain, Context, Singular, Plural, N) ->
     Locale = getlocale(lc_messages),
     Domain1 = if Domain == undefined -> textdomain();
@@ -46,12 +48,19 @@ dnpgettext(Domain, Context, Singular, Plural, N) ->
               end,
     dnpgettext(Domain1, Context, Singular, Plural, N, Locale).
     
-dnpgettext(Domain, Context, Singular, Plural, N, Locale) ->
+dnpgettext(Domain, Context, Singular, Plural, N, Locale) when is_binary(Context),
+                                                              is_binary(MsgID),
+                                                              is_binary(Singular),
+                                                              is_binary(Plural),
+                                                              is_binary(Locale) ->
     case gettexter_server:dnpgettext(Domain, Context, Locale, Singular, Plural, N) of
         undefined when N == 1 -> Singular;
         undefined             -> Plural;
         MsgStr                -> MsgStr
-    end.
+    end;
+dnpgettext(Domain, Context, Singular, Plural, N, Locale) ->
+    dnpgettext(Domain, list_to_binary(Context), list_to_binary(Singular),
+               list_to_binary(Plural), N, list_to_binary(Locale)).
 
 %% TODO: add `*gettext(..., Locale)' functions here (locale from args, not PD).
 
