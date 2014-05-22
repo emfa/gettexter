@@ -8,6 +8,7 @@
 -module(gettexter).
 -export([gettext/1, pgettext/2, dgettext/2, dpgettext/3]).
 -export([ngettext/3, npgettext/4, dngettext/4, dnpgettext/5]).
+-export([dpgettext/4, dnpgettext/6]).
 
 -export([bindtextdomain/2]).
 -export([setlocale/2, getlocale/1]).
@@ -31,15 +32,20 @@ dpgettext(Domain, Context, MsgID) ->
               end,
     dpgettext(Domain1, Locale, Context, MsgID).
 
-dpgettext(Domain, Context, MsgID, Locale) when is_binary(Context),
+dpgettext(Domain, Context, MsgID, Locale) when (Context == undefined) orelse is_binary(Context),
                                                is_binary(MsgID),
                                                is_binary(Locale) ->
-    case gettexter_server:dpgettext(Domain, Locale, Context, MsgID) of
+    case gettexter_server:dpgettext(Domain, Context, Locale, MsgID) of
         undefined -> MsgID;
         MsgStr    -> MsgStr
     end;
-dpgettext(Domain, Context, MsgID, Locale) ->
-    dpgettext(Domain, list_to_binary(Context), list_to_binary(MsgID), list_to_binary(Locale)).
+dpgettext(Domain, Context0, MsgID, Locale) ->
+    Context = case Context0 of
+                  undefined -> undefined;
+                  _         -> list_to_binary(Context0)
+              end,
+    Bin = dpgettext(Domain, Context, list_to_binary(MsgID), list_to_binary(Locale)),
+    binary_to_list(Bin).
 
 dnpgettext(Domain, Context, Singular, Plural, N) ->
     Locale = getlocale(lc_messages),
@@ -48,8 +54,7 @@ dnpgettext(Domain, Context, Singular, Plural, N) ->
               end,
     dnpgettext(Domain1, Context, Singular, Plural, N, Locale).
     
-dnpgettext(Domain, Context, Singular, Plural, N, Locale) when is_binary(Context),
-                                                              is_binary(MsgID),
+dnpgettext(Domain, Context, Singular, Plural, N, Locale) when (Context == undefined) orelse is_binary(Context),
                                                               is_binary(Singular),
                                                               is_binary(Plural),
                                                               is_binary(Locale) ->
@@ -58,18 +63,20 @@ dnpgettext(Domain, Context, Singular, Plural, N, Locale) when is_binary(Context)
         undefined             -> Plural;
         MsgStr                -> MsgStr
     end;
-dnpgettext(Domain, Context, Singular, Plural, N, Locale) ->
-    dnpgettext(Domain, list_to_binary(Context), list_to_binary(Singular),
-               list_to_binary(Plural), N, list_to_binary(Locale)).
+dnpgettext(Domain, Context0, Singular, Plural, N, Locale) ->
+    Context = case Context0 of
+                  undefined -> undefined;
+                  _         -> list_to_binary(Context0)
+              end,
+    Bin = dnpgettext(Domain, Context, list_to_binary(Singular), list_to_binary(Plural), N, list_to_binary(Locale)),
+    binary_to_list(Bin).
 
 %% TODO: add `*gettext(..., Locale)' functions here (locale from args, not PD).
 
 %% Configuration APIs
--spec bindtextdomain(atom(), file:filename()) -> ok.
 bindtextdomain(Domain, LocaleDir) ->
     gettexter_server:bindtextdomain(Domain, LocaleDir).
 
--spec setlocale(atom(), string()) -> ok.
 setlocale(Category=lc_messages, Locale) ->
     TextDomain = textdomain(),
     true = (TextDomain =/= undefined),          %assert
@@ -77,20 +84,16 @@ setlocale(Category=lc_messages, Locale) ->
     {ok, _} = gettexter_server:ensure_loaded(TextDomain, Category, Locale),
     ok.
 
--spec getlocale(atom()) -> string() | undefined.
 getlocale(Category=lc_messages) ->
     TextDomain = textdomain(),
     get({?MODULE, locale, TextDomain, Category}).
 
--spec textdomain(atom()) -> ok.
 textdomain(Domain) ->
     put({?MODULE, textdomain}, Domain).
 
--spec textdomain() -> atom() | undefined.
 textdomain() ->
     get({?MODULE, textdomain}).
 
--spec bind_textdomain_codeset(atom(), string()) -> ok.
 bind_textdomain_codeset(_Domain, _Charset) ->
     error(not_implemented).
 
@@ -98,13 +101,11 @@ bind_textdomain_codeset(_Domain, _Charset) ->
 
 %% @doc
 %% Which domains are loaded for `Locale'.
--spec which_domains(string()) -> [atom()].
 which_domains(Locale) ->
     gettexter_server:which_domains(Locale).
 
 %% @doc
 %% Which locales are loaded for `Domain'.
--spec which_locales(atom()) -> [string()].
 which_locales(Domain) ->
     gettexter_server:which_locales(Domain).
 
@@ -113,9 +114,11 @@ which_locales(Domain) ->
 %% isn't loaded, all `gettext' lookups to it will return default value `Msgid'.
 %% This function may be called at application start-up or configuration time,
 %% once for each supported locale.
--spec ensure_loaded(atom(), lc_messages, string()) -> {ok, already | file:filename()} | {error, term()}.
-ensure_loaded(TextDomain, Category=lc_messages, Locale) ->
-    gettexter_server:ensure_loaded(TextDomain, Category, Locale).
+ensure_loaded(TextDomain, Category=lc_messages, Locale) when is_binary(Locale) ->
+    gettexter_server:ensure_loaded(TextDomain, Category, Locale);
+ensure_loaded(TextDomain, Category, Locale) ->
+    {ok, BinFileName} = ensure_loaded(TextDomain, Category, list_to_binary(Locale)),
+    {ok, binary_to_list(BinFileName)}.
 
 %% @doc
 %% Remove all gettext stuff from process dictionary (but not from locale data storage).

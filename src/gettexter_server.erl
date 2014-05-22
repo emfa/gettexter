@@ -58,7 +58,6 @@ dnpgettext(Domain, Context, Locale, Singular, Plural, N) ->
 bindtextdomain(Domain, LocaleDir) ->
     gen_server:call(?SERVER, {bindtextdomain, Domain, LocaleDir}).
 
-
 ensure_loaded(TextDomain, _Category, Locale) ->
     case ets:member(?TAB, ?LOADED_KEY(TextDomain, Locale)) of
         true -> {ok, already};
@@ -121,30 +120,19 @@ load_locale(Tab, Domain, Locale) ->
     %% code:lib_dir/1 may return {error, ...}, so this should be wrapped by try...catch
     %% calculate path to .mo file
     Binding = case ets:lookup(Tab, ?BINDING_KEY(Domain)) of
-                  [] ->
-                      filename:join(code:lib_dir(Domain), "locale");
-                  [{_, AbsPath = "/" ++ _}] ->
-                      AbsPath;
-                  [{_, RelPath}] ->
-                        filename:join(code:lib_dir(Domain), RelPath)
-                 end,
+                  [] -> "locale";
+                  [{_, Path}] -> Path
+              end,
     AbsBinding = filename:absname(Binding),
     MoFileName = filename:join([AbsBinding, Locale, "LC_MESSAGES", atom_to_list(Domain) ++ ".mo"]),
     %% extract messages from .mo
     Parsed = gettexter_mo_parser:parse_file(MoFileName),
     Catalog = gettexter_mo_parser:to_dict(Parsed),
     %% fill ETS table
-    B2LIfNotNull = fun(undefined) -> undefined;
-                      (V) -> binary_to_list(V)
-                   end,
     Headers = lists:foldl(fun({{<<"">>, undefined, _}, [MimeData]}, undefined) ->
                                   parse_headers(MimeData);
                              ({{Singular, Plural, Context}, Values}, MD) ->
-                                  Ob = {?PLURAL_MSG_KEY(Domain, Locale,
-                                                        B2LIfNotNull(Context),
-                                                        B2LIfNotNull(Singular),
-                                                        B2LIfNotNull(Plural)),
-                                        lists:map(fun erlang:binary_to_list/1, Values)},
+                                  Ob = {?PLURAL_MSG_KEY(Domain, Locale, Context, Singular, Plural), Values},
                                   true = ets:insert(Tab, Ob),
                                   MD
                           end, undefined, Catalog),
