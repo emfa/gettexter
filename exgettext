@@ -1,6 +1,6 @@
 #!/usr/bin/env escript
 %% -*- erlang -*-
-%%! -smp enable -sname exgettext
+%%! -pz ebin/ -smp enable -sname exgettext
 
 -define(TAB, dump_table).
 

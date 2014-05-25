@@ -1,8 +1,8 @@
--module(extract_test).
+-module(extract).
 
 -export([func/0]).
 
--define(GETTEXT_DOMAIN, default).
+-define(DOMAIN, default).
 -include("../include/shortcuts.hrl").
 
 -define(LOC, <<"en">>).
