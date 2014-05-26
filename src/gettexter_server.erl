@@ -22,7 +22,7 @@
 
 %% ETS key types
 -define(MSG_KEY(Domain, Locale, MsgCtxt, MsgID),
-        ?PLURAL_MSG_KEY(Domain, Locale, MsgCtxt, MsgID, undefined, undefined)).
+        ?PLURAL_MSG_KEY(Domain, Locale, MsgCtxt, MsgID, undefined, 0)).
 -define(PLURAL_MSG_KEY(Domain, Locale, MsgCtxt, MsgID, MsgIDPlural, Form),
         {msg, Domain, Locale, MsgCtxt, MsgID, MsgIDPlural, Form}). 
 -define(PLURAL_RULE_KEY(Domain, Locale), {plural_rule, Domain, Locale}).
@@ -40,7 +40,7 @@ start_link() ->
 gettext(Domain, Locale, MsgCtxt, MsgID) ->
     case ets:lookup(?TAB, ?MSG_KEY(Domain, Locale, MsgCtxt, MsgID)) of
         []              -> undefined;
-        [{_, [MsgStr]}] -> MsgStr
+        [{_, MsgStr}] -> MsgStr
     end.
 
 gettext(Domain, Locale, MsgCtxt, MsgID, MsgIDPlural, N) ->
@@ -117,7 +117,7 @@ code_change(_OldVsn, State, _Extra) ->
 
 load_locale(Tab, Domain, Locale) ->
     Binding = case ets:lookup(Tab, ?BINDING_KEY(Domain)) of
-                  []          -> "priv/locale";
+                  []          -> "locale";
                   [{_, Path}] -> Path
               end,
     AbsBinding = filename:absname(Binding),
