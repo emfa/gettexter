@@ -93,7 +93,6 @@ gettexter:gettext(Domain :: atom(), Locale :: binary(), MsgCtxt :: undefined | b
 
 ```erlang
 gettexter:gettext(Domain :: atom(), Locale :: binary(), MsgCtxt :: undefined | binary(), MsgID :: binary(), MsgIDPlural :: binary(), N :: non_neg_integer()) -> binary().
-% and other 'gettexter:d{n,p,pn}gettext' plus '?D*_' macroses
 ```
 
 ### Gettext configuration
@@ -119,7 +118,7 @@ gettexter:which_domains(Locale) -> [atom()].
 Which domains are loaded from .mo files to gettext server for `Locale`.
 
 ```erlang
-gettexter:which_locales(Domain) -> [string()].
+gettexter:which_locales(Domain) -> [binary()].
 ```
 Which locales are loaded from .mo files to gettext server for `Domain`.
 
@@ -137,13 +136,10 @@ be removed from gettexter server to avoid incomplete/broken data.
 Glossary
 --------
 
-* Domain: namespace for translations. In practice, the name of .po/.mo file, which
-          in most cases, named as your OTP application.
+* Domain: namespace for translations. In practice, the name of .po/.mo file.
 * Locale: not strictly speaking, just name of translation's language, like "en",
           "en_GB", "ru", "pt_BR", etc. Usualy Locale contains also rules of
           plural form calculation, date/time/number formatting, currency etc.
-* LC_MESSAGES: locale category, which contains translated application's strings (in
-          .mo/.po format).
 
 TODO
 ----
