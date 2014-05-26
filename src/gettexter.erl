@@ -7,6 +7,7 @@
 
 -module(gettexter).
 -export([gettext/4, gettext/6]).
+-export([mark/3]).
 
 -export([bindtextdomain/2]).
 -export([ensure_loaded/2, which_domains/1, which_locales/1]).
@@ -34,6 +35,12 @@ gettext(Domain, Locale, MsgCtxt, MsgID, MsgIDPlural, N) ->
         undefined             -> MsgIDPlural;
         MsgStr                -> MsgStr
     end.
+
+%% @doc
+%% Mark string to be translatable, they are identity functions and has no
+%% effect on the basic program.
+mark(_Domain, _Context, MsgID) ->
+    MsgID.
 
 %% Configuration APIs
 

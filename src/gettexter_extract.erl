@@ -69,6 +69,8 @@ while(0 ,_ ,_) -> ok.
 %%      NOTE: Does not change anything the AST.
 traverse_call(?CALL(gettexter, gettext, Args), Tab) ->
     dump_gettext(Args, Tab);
+traverse_call(?CALL(gettexter, mark, Args), Tab) ->
+    dump_mark(Args, Tab);
 traverse_call(?CALL(_, _, Args), Tab) ->
     traverse_list(Args, Tab).
 
@@ -88,6 +90,13 @@ dump_gettext([?ATOM(Domain), _Locale, ?BIN(Line1, MsgCtxt),
               ?BIN(Line2, MsgID), ?BIN(Line3, MsgIDPlural), _N], Tab) ->
     dump(Domain, {plural, MsgCtxt, MsgID, MsgIDPlural}, [Line1, Line2, Line3], Tab);
 dump_gettext(Args, Tab) ->
+    traverse_list(Args, Tab).
+
+dump_mark([?ATOM(Domain), ?ATOM(undefined), ?BIN(Line, MsgID)], Tab) ->
+    dump(Domain, {simple, undefined, MsgID}, [Line], Tab);
+dump_mark([?ATOM(Domain), ?BIN(Line1, MsgCtxt), ?BIN(Line2, MsgID)], Tab) ->
+    dump(Domain, {simple, MsgCtxt, MsgID}, [Line1, Line2], Tab);
+dump_mark(Args, Tab) ->
     traverse_list(Args, Tab).
 
 %% @doc Dump Entry from Domain into the epot file with info of where the string
