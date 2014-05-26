@@ -33,7 +33,6 @@
 %% @doc Write one .pot file for each domain in entries
 write(Entries, OutDir) ->
     Domains = group_domains(Entries),
-    io:format("~p~n", [Domains]),
     [write_pot_file(OutDir, Domain, Es) || {Domain, Es} <- Domains],
     ok.
 
@@ -103,10 +102,21 @@ write_entry(Fd, {plural, MsgCtxt, MsgID, MsgIDPlural}) ->
     file:write(Fd, msgctxt(MsgCtxt)),
     write_entry(Fd, {plural, undefined, MsgID, MsgIDPlural}).
 
+write_refs(Fd, Refs) ->
+    F = fun({File, LineNrs}) ->
+                LineStr = string:join(lists:map(fun integer_to_list/1, LineNrs), ","),
+                File ++ ":" ++ LineStr
+        end,
+    CommentRef = string:join(lists:map(F, Refs), " / "),
+    file:write(Fd, "#, " ++ CommentRef ++ "\n").
+
+write_entry(Fd, Entry, Refs) ->
+    write_refs(Fd, Refs),
+    write_entry(Fd, Entry).
+
 write_entries(Fd, Entries) ->
-    io:format("Entries: ~p~n", [Entries]),
-    WriteEntry = fun({Entry, _Refs}) ->
-                         write_entry(Fd, Entry),
+    WriteEntry = fun({Entry, Refs}) ->
+                         write_entry(Fd, Entry, Refs),
                          file:write(Fd, "\n")
                  end,
     lists:foreach(WriteEntry, Entries).
@@ -202,24 +212,21 @@ write_header(Fd) ->
 %%      TODO: Dynamic
 mk_header() ->
     "# SOME DESCRIPTIVE TITLE.\n"
-        "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER\n"
-        "# This file is distributed under the same license as the "
-        "PACKAGE package.\n"
-        "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.\n"
-        "#\n"
-        "# NB: Consider using poEdit <http://poedit.sourceforge.net>\n"
-        "#\n"
-        "#\n"
-        "#, fuzzy\n"
-        "msgid \"\"\n"
-        "msgstr \"\"\n"
-        "\"Project-Id-Version: PACKAGE VERSION\\n\"\n"
-        "\"POT-Creation-Date: 2003-10-21 16:45+0200\\n\"\n"
-        "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"\n"
-        "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"\n"
-        "\"Language-Team: LANGUAGE <LL@li.org>\\n\"\n"
-        "\"Language: en\\n\""
-        "\"MIME-Version: 1.0\\n\"\n"
-        "\"Content-Type: text/plain; charset=UTF-8\\n\"\n"
-        "\"Content-Transfer-Encoding: 8bit\\n\"\n"
-        "\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"\n\n".
+    "# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER\n"
+    "# This file is distributed under the same license as the "
+    "PACKAGE package.\n"
+    "# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.\n"
+    "#\n"
+    "#, fuzzy\n"
+    "msgid \"\"\n"
+    "msgstr \"\"\n"
+    "\"Project-Id-Version: PACKAGE VERSION\\n\"\n"
+    "\"POT-Creation-Date: 2003-10-21 16:45+0200\\n\"\n"
+    "\"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n\"\n"
+    "\"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n\"\n"
+    "\"Language-Team: LANGUAGE <LL@li.org>\\n\"\n"
+    "\"Language: en\\n\""
+    "\"MIME-Version: 1.0\\n\"\n"
+    "\"Content-Type: text/plain; charset=UTF-8\\n\"\n"
+    "\"Content-Transfer-Encoding: 8bit\\n\"\n"
+    "\"Plural-Forms: nplurals=2; plural=(n != 1);\\n\"\n\n".
