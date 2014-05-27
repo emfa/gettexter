@@ -1,28 +1,29 @@
 -module(gettexter_extract).
 
--export([extract/1, extract/2, extract2pots/2]).
+-export([extract/2, extract/3, extract2pots/3]).
 
 -define(CURRENT_FILE, current_file).
 
-extract(Files) ->
+extract(Files, IncludeDirs) ->
     Tab = ets:new(dump_table, []),
-    extract(Files, Tab),
+    extract(Files, IncludeDirs, Tab),
     L = ets:tab2list(Tab),
     ets:delete(Tab),
     L.
 
-extract(Files, Tab) ->
-    Dump = fun(File) -> dump_entries(File, Tab) end,
+extract(Files, IncludeDirs, Tab) ->
+    Dump = fun(File) -> dump_entries(File, IncludeDirs, Tab) end,
     lists:map(Dump, Files),
     ets:delete(Tab, ?CURRENT_FILE).
 
-extract2pots(Files, OutDir) ->
-    gettexter_po_writer:write(extract(Files), OutDir).
+extract2pots(Files, IncludeDirs, OutDir) ->
+    gettexter_po_writer:write(extract(Files, IncludeDirs), OutDir).
 
-dump_entries(File, Tab) ->
+dump_entries(File, IncludeDirs, Tab) ->
     BaseName = filename:basename(File),
     ets:insert(Tab, {?CURRENT_FILE, BaseName}),
-    case compile:file(File, [binary, 'P']) of
+    Includes = [{i, Dir} || Dir <- IncludeDirs],
+    case compile:file(File, [binary, 'P'] ++ Includes) of
         {ok, [], Form} -> 
             file:delete(filename:rootname(BaseName) ++ ".P"),
             traverse(Form, Tab);
