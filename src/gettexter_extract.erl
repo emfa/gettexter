@@ -74,7 +74,7 @@ while(0 ,_ ,_) -> ok.
 %%      NOTE: Does not change anything the AST.
 traverse_call(?CALL(gettexter, gettext, Args), Tab) ->
     dump_gettext(Args, Tab);
-traverse_call(?CALL(_, _, Args), Tab) ->
+traverse_call({call, _Func, Args}, Tab) ->
     traverse_list(Args, Tab).
 
 %% @doc Example:
