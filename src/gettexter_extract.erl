@@ -22,9 +22,13 @@ extract2pots(Files, OutDir) ->
 dump_entries(File, Tab) ->
     BaseName = filename:basename(File),
     ets:insert(Tab, {?CURRENT_FILE, BaseName}),
-    {ok, [], Form} = compile:file(File, [binary, 'P']),
-    file:delete(filename:rootname(BaseName) ++ ".P"),
-    traverse(Form, Tab).
+    case compile:file(File, [binary, 'P']) of
+        {ok, [], Form} -> 
+            file:delete(filename:rootname(BaseName) ++ ".P"),
+            traverse(Form, Tab);
+        error ->
+            io:format("Could not extract from file: ~p~n", [File])
+    end.
 
 %% @doc Recursively walk down the abstract syntax tree and find all
 %%      function calls that we want to extract strings/binaries from.
