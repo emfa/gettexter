@@ -83,36 +83,26 @@ traverse_call({call, _, _Func, Args}, Tab) ->
 %%      gettext(adomain, <<"se">>, undefined, <<"MsgID">>, <<"MsgIDPlural">>, 2)
 %%      gettext(adomain, <<"se">>, <<"MsgCtxt">>, <<"MsgID">>, <<"MsgIDPlural">>, 2)
 dump_gettext([?ATOM(Domain), _Locale, ?ATOM(undefined), ?BIN(Line, MsgID)], Tab) ->
-    dump(Domain, {simple, undefined, MsgID}, [Line], Tab);
-dump_gettext([?ATOM(Domain), _Locale, ?BIN(Line1, MsgCtxt), ?BIN(Line2, MsgID)], Tab) ->
-    dump(Domain, {simple, MsgCtxt, MsgID}, [Line1, Line2], Tab);
+    dump(Domain, {simple, undefined, MsgID}, Line, Tab);
+dump_gettext([?ATOM(Domain), _Locale, ?BIN(Line, MsgCtxt), ?BIN(_, MsgID)], Tab) ->
+    dump(Domain, {simple, MsgCtxt, MsgID}, Line, Tab);
 dump_gettext([?ATOM(Domain), _Locale, ?ATOM(undefined),
-              ?BIN(Line1, MsgID), ?BIN(Line2, MsgIDPlural), _N], Tab) ->
-    dump(Domain, {plural, undefined, MsgID, MsgIDPlural}, [Line1, Line2], Tab);
-dump_gettext([?ATOM(Domain), _Locale, ?BIN(Line1, MsgCtxt),
-              ?BIN(Line2, MsgID), ?BIN(Line3, MsgIDPlural), _N], Tab) ->
-    dump(Domain, {plural, MsgCtxt, MsgID, MsgIDPlural}, [Line1, Line2, Line3], Tab);
+              ?BIN(Line, MsgID), ?BIN(_, MsgIDPlural), _N], Tab) ->
+    dump(Domain, {plural, undefined, MsgID, MsgIDPlural}, Line, Tab);
+dump_gettext([?ATOM(Domain), _Locale, ?BIN(Line, MsgCtxt),
+              ?BIN(_, MsgID), ?BIN(_, MsgIDPlural), _N], Tab) ->
+    dump(Domain, {plural, MsgCtxt, MsgID, MsgIDPlural}, Line, Tab);
 dump_gettext(Args, Tab) ->
     traverse_list(Args, Tab).
 
 %% @doc Dump Entry from Domain into the epot file with info of where the string
 %%      where located
-dump(Domain, Entry, LineNrs, Tab) ->
+dump(Domain, Entry, Line, Tab) ->
     Key = {Domain, Entry},
     [{_, FileName}] = ets:lookup(Tab, ?CURRENT_FILE),
     FileInfo = case ets:lookup(Tab, Key) of
                    []           -> [];
                    [{_, FInfo}] -> FInfo
                end,
-    NewOb = {Key, [{FileName, nub_line_numbers(LineNrs)}|FileInfo]},
+    NewOb = {Key, [{FileName, Line}|FileInfo]},
     ets:insert(Tab, NewOb).
-
-%% @doc Remove duplicate line numbers and sort them 
-nub_line_numbers(LineNrs) ->
-    F = fun(LineNr, Acc) ->
-                case lists:member(LineNr, Acc) of
-                    true  -> Acc;
-                    false -> [LineNr | Acc]
-                end
-        end,
-    lists:reverse(lists:foldl(F, [], LineNrs)).

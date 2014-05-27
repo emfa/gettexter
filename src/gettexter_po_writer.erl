@@ -52,8 +52,7 @@ group_domains([]) ->
 group_domains(Entries) ->
     {{Domain, _}, _} = hd(Entries), 
     {Same, NotSame} = lists:partition(fun({{D, _}, _}) -> D == Domain end, Entries),
-    [{Domain, [{E, I} || {{_, E}, I} <- Same]} | group_domains(NotSame)].
-
+    [{Domain, [{Ent, Refs} || {{_, Ent}, Refs} <- Same]} | group_domains(NotSame)].
 
 open_pot_file(Dir, Domain) ->
     PotFile = filename:join([Dir, atom_to_list(Domain) ++ ".pot"]),
@@ -102,13 +101,10 @@ write_entry(Fd, {plural, MsgCtxt, MsgID, MsgIDPlural}) ->
     file:write(Fd, msgctxt(MsgCtxt)),
     write_entry(Fd, {plural, undefined, MsgID, MsgIDPlural}).
 
-write_refs(Fd, Refs) ->
-    F = fun({File, LineNrs}) ->
-                LineStr = string:join(lists:map(fun integer_to_list/1, LineNrs), ","),
-                File ++ ":" ++ LineStr
-        end,
-    CommentRef = string:join(lists:map(F, Refs), " / "),
-    file:write(Fd, "#, " ++ CommentRef ++ "\n").
+write_refs(_Fd, []) -> ok;
+write_refs(Fd, [{File, Line}|Refs]) ->
+    file:write(Fd, "#: " ++ File ++ ":" ++ integer_to_list(Line) ++ "\n"),
+    write_refs(Fd, Refs).
 
 write_entry(Fd, Entry, Refs) ->
     write_refs(Fd, Refs),
