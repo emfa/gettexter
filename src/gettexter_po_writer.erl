@@ -24,11 +24,19 @@
 %% @doc Write a po file
 
 -module(gettexter_po_writer).
--export([write/2]).
+-export([write/2, write_epot/2]).
 
 -define(ENDCOL, 72).
 -define(PIVOT, 4).
 -define(SEP, $\s).
+
+%% @doc Extract entries from a dets table file and write a pot file for
+%%      each domain in the table
+write_epot(Epot, OutDir) ->
+    {ok, D} = dets:open_file(Epot),
+    Entries = dets:foldl(fun(I,A) -> [I|A] end, [], D),
+    dets:close(D),
+    write(Entries, OutDir).
 
 %% @doc Write one .pot file for each domain in entries
 write(Entries, OutDir) ->
