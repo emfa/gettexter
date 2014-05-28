@@ -13,7 +13,7 @@
 parse_transform(Forms, Opts) ->
     case lists:member(gettext, Opts) of
         true ->
-            Tab = ets:new(?TAB, [set, named_table]),
+            Tab = ets:new(?TAB, [named_table]),
             true = ets:insert(Tab, {file, parse_trans:get_file(Forms)}),
             parse_trans:plain_transform(fun do_dump/1, Forms),
             true = ets:delete(Tab, file),
