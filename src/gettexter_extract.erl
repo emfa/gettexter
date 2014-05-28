@@ -10,22 +10,22 @@
 -define(BIN(Line, String), {bin, _, [{bin_element, _, ?STR(Line, String), default, default}]}).
 -define(GETTEXT(Args), {call, _, {remote, _, ?ATOM(gettexter), ?ATOM(gettext)}, Args}).
 
+%% @doc Parse transform for extracting translatable strings from erlang source files.
+%%      Setting the compile options to {epot, Epotfile} will cause the transform to
+%%      dump all entries into Epotfile. If not set it will default to "epot.dets" in
+%%      the CWD.
 parse_transform(Forms, Opts) ->
-    case lists:member(gettext, Opts) of
-        true ->
-            Tab = ets:new(?TAB, []),
-            true = ets:insert(Tab, {file, parse_trans:get_file(Forms)}),
-            Dump = fun(Form) -> do_dump(Form, Tab) end,
-            parse_trans:plain_transform(Dump, Forms),
-            true = ets:delete(Tab, file),
-            {ok, D} = dets:open_file(?EPOT, [{file, ?EPOT}]),
-            ok = dets:insert(D, ets:tab2list(Tab)),
-            true = ets:delete(Tab),
-            ok = dets:close(D),
-            Forms;
-        false ->
-            Forms
-    end.
+    Epot = proplists:get_value(epot, Opts, ?EPOT),
+    Tab = ets:new(?TAB, []),
+    true = ets:insert(Tab, {file, parse_trans:get_file(Forms)}),
+    Dump = fun(Form) -> do_dump(Form, Tab) end,
+    parse_trans:plain_transform(Dump, Forms),
+    true = ets:delete(Tab, file),
+    {ok, D} = dets:open_file(Epot, [{file, Epot}]),
+    ok = dets:insert(D, ets:tab2list(Tab)),
+    true = ets:delete(Tab),
+    ok = dets:close(D),
+    Forms.
 
 do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?ATOM(undefined), ?BIN(Line, MsgID)]) = Call, Tab) ->
     dump(Domain, {simple, undefined, MsgID}, Line, Tab),
