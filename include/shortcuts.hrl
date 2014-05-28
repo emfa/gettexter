@@ -1,3 +1,5 @@
+-compile({parse_transform, gettexter_extract}).
+
 -ifndef(DOMAIN).
   -define(DOMAIN, default).
 -endif.
