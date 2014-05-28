@@ -13,9 +13,10 @@
 parse_transform(Forms, Opts) ->
     case lists:member(gettext, Opts) of
         true ->
-            Tab = ets:new(?TAB, [named_table]),
+            Tab = ets:new(?TAB, []),
             true = ets:insert(Tab, {file, parse_trans:get_file(Forms)}),
-            parse_trans:plain_transform(fun do_dump/1, Forms),
+            Dump = fun(Form) -> do_dump(Form, Tab) end,
+            parse_trans:plain_transform(Dump, Forms),
             true = ets:delete(Tab, file),
             {ok, D} = dets:open_file(?EPOT, [{file, ?EPOT}]),
             ok = dets:insert(D, ets:tab2list(Tab)),
@@ -26,30 +27,30 @@ parse_transform(Forms, Opts) ->
             Forms
     end.
 
-do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?ATOM(undefined), ?BIN(Line, MsgID)]) = Call) ->
-    dump(Domain, {simple, undefined, MsgID}, Line),
+do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?ATOM(undefined), ?BIN(Line, MsgID)]) = Call, Tab) ->
+    dump(Domain, {simple, undefined, MsgID}, Line, Tab),
     Call;
-do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?BIN(Line, MsgCtxt), ?BIN(_, MsgID)]) = Call) ->
-    dump(Domain, {simple, MsgCtxt, MsgID}, Line),
+do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?BIN(Line, MsgCtxt), ?BIN(_, MsgID)]) = Call, Tab) ->
+    dump(Domain, {simple, MsgCtxt, MsgID}, Line, Tab),
     Call;
 do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?ATOM(undefined),
-                  ?BIN(Line, MsgID), ?BIN(_, MsgIDPlural), _N]) = Call) ->
-    dump(Domain, {plural, undefined, MsgID, MsgIDPlural}, Line),
+                  ?BIN(Line, MsgID), ?BIN(_, MsgIDPlural), _N]) = Call, Tab) ->
+    dump(Domain, {plural, undefined, MsgID, MsgIDPlural}, Line, Tab),
     Call;
 do_dump(?GETTEXT([?ATOM(Domain), _Locale, ?BIN(Line, MsgCtxt),
-                  ?BIN(_, MsgID), ?BIN(_, MsgIDPlural), _N]) = Call) ->
-    dump(Domain, {plural, MsgCtxt, MsgID, MsgIDPlural}, Line),
+                  ?BIN(_, MsgID), ?BIN(_, MsgIDPlural), _N]) = Call, Tab) ->
+    dump(Domain, {plural, MsgCtxt, MsgID, MsgIDPlural}, Line, Tab),
     Call;
-do_dump(_) ->
+do_dump(_, _) ->
     continue.
 
 %% @doc Dump Entry from Domain into the epot file with info of where the string
 %%      where located
-dump(Domain, Entry, LineNr) ->
+dump(Domain, Entry, LineNr, Tab) ->
     Key = {Domain, Entry},
-    [{_, FileName}] = ets:lookup(?TAB, file),
-    FileInfo = case ets:lookup(?TAB, Key) of
+    [{_, FileName}] = ets:lookup(Tab, file),
+    FileInfo = case ets:lookup(Tab, Key) of
                    []           -> [];
                    [{_, FInfo}] -> FInfo
                end,
-    ets:insert(?TAB, {Key, [{FileName, LineNr}|FileInfo]}).
+    ets:insert(Tab, {Key, [{FileName, LineNr}|FileInfo]}).
